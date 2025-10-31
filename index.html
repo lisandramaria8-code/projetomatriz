@@ -1,0 +1,871 @@
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Escape Room - Cifra de Hill</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Special+Elite&family=VT323&family=Oxanium:wght@400;600&display=swap');
+
+  :root {
+    --main-bg-color: #121212;
+    --panel-bg-color: rgba(20, 20, 20, 0.85);
+    --accent-color: #00c853;
+    --accent-hover: #00e676;
+    --danger-color: #ff5252;
+    --text-color: #e0e0e0;
+    --panel-shadow: 0 0 20px rgba(0, 200, 83, 0.2);
+    --timer-color: #ff5252;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Oxanium', monospace;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)),
+                url("tela-de-fundo.png") no-repeat center center fixed;
+    background-size: cover;
+    color: var(--text-color);
+    text-align: center;
+    padding: 20px;
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.1),
+      rgba(0, 0, 0, 0.1) 2px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .hidden { display: none !important; }
+
+  .sala {
+    max-width: 800px;
+    margin: auto;
+    background: var(--panel-bg-color);
+    padding: 30px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 200, 83, 0.3);
+    box-shadow: var(--panel-shadow), 0 0 0 1px rgba(0, 200, 83, 0.1);
+    backdrop-filter: blur(10px);
+    position: relative;
+    z-index: 2;
+    transition: all 0.5s ease;
+  }
+
+  .sala::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(to right, transparent, var(--accent-color), transparent);
+    opacity: 0.7;
+  }
+
+  h2 {
+    color: var(--accent-color);
+    font-family: 'Special Elite', cursive;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(0, 200, 83, 0.4);
+    margin-top: 5px;
+  }
+
+  button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    border: 1px solid var(--accent-color);
+    border-radius: 4px;
+    background: rgba(0, 200, 83, 0.2);
+    color: var(--accent-color);
+    font-family: 'Oxanium', monospace;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  button:hover {
+    background: var(--accent-color);
+    color: #000;
+    box-shadow: 0 0 15px rgba(0, 200, 83, 0.5);
+  }
+
+  input, textarea {
+    padding: 12px;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 200, 83, 0.3);
+    background: rgba(20, 20, 20, 0.7);
+    color: var(--accent-color);
+    width: 70%;
+    text-align: center;
+    font-family: 'VT323', monospace;
+    font-size: 1.2em;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+  }
+
+  input:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 10px rgba(0, 200, 83, 0.5);
+  }
+
+  pre {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(0, 200, 83, 0.3);
+    padding: 15px;
+    border-radius: 4px;
+    color: var(--accent-color);
+    overflow: auto;
+    text-align: center;
+    font-family: 'VT323', monospace;
+    font-size: 1.3em;
+    position: relative;
+    max-width: 280px;
+    width: 100%;
+    margin: 20px auto;
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.7);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+
+  #timer {
+    font-weight: bold;
+    color: var(--timer-color);
+    margin-bottom: 15px;
+    font-family: 'VT323', monospace;
+    font-size: 1.5em;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px rgba(255, 82, 82, 0.7);
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+  }
+
+  #ranking {
+    text-align: left;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border-radius: 4px;
+    max-width: 400px;
+    margin: 25px auto;
+    font-family: 'VT323', monospace;
+    font-size: 1.1em;
+    border: 1px solid rgba(0, 200, 83, 0.3);
+  }
+
+  #ranking h3 {
+    color: var(--accent-color);
+    border-bottom: 1px solid var(--accent-color);
+    padding-bottom: 5px;
+    margin-top: 0;
+  }
+
+  .dificuldade {
+    margin: 25px;
+  }
+
+  .dificuldade button {
+    margin: 5px;
+    width: 120px;
+  }
+
+  .dificuldade button.selecionado {
+    background: var(--accent-color);
+    color: #000;
+    box-shadow: 0 0 15px rgba(0, 200, 83, 0.5);
+  }
+
+  .enigma {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px dashed rgba(0, 200, 83, 0.3);
+    border-radius: 4px;
+    padding: 15px;
+    margin: 15px 0;
+    position: relative;
+  }
+
+  .enigma span {
+    font-family: 'Special Elite', cursive;
+    line-height: 1.6;
+    font-size: 1.1em;
+  }
+
+  .mensagem-cifrada {
+    letter-spacing: 3px;
+    font-weight: bold;
+    color: var(--accent-color);
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 10px;
+    border-radius: 4px;
+    display: inline-block;
+    margin: 10px 0;
+    font-family: 'VT323', monospace;
+    font-size: 1.4em;
+    text-shadow: 0 0 5px rgba(0, 200, 83, 0.5);
+  }
+
+  /* Efeito de transição entre salas */
+  .fade-transition {
+    animation: fadeEffect 1s;
+  }
+
+  @keyframes fadeEffect {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Decorações para criar ambiente de escape room */
+  .decorative-element {
+    position: absolute;
+    z-index: 0;
+    opacity: 0.15;
+    pointer-events: none;
+  }
+
+  .gear {
+    width: 100px;
+    height: 100px;
+    border: 6px solid var(--accent-color);
+    border-radius: 50%;
+    top: 10%;
+    left: 5%;
+  }
+
+  .gear::before, .gear::after {
+    content: "";
+    position: absolute;
+    background: var(--accent-color);
+  }
+
+  .gear::before {
+    width: 20px;
+    height: 120px;
+    left: 40px;
+    top: -15px;
+  }
+
+  .gear::after {
+    width: 120px;
+    height: 20px;
+    left: -15px;
+    top: 40px;
+  }
+
+  .circuit {
+    border-top: 3px solid var(--accent-color);
+    border-right: 3px solid var(--accent-color);
+    width: 200px;
+    height: 150px;
+    bottom: 10%;
+    right: 10%;
+  }
+
+  .circuit::before, .circuit::after {
+    content: "";
+    position: absolute;
+    background: var(--accent-color);
+    border-radius: 50%;
+  }
+
+  .circuit::before {
+    width: 12px;
+    height: 12px;
+    top: -6px;
+    left: 50px;
+  }
+
+  .circuit::after {
+    width: 12px;
+    height: 12px;
+    top: 50px;
+    right: -6px;
+  }
+
+  /* Mensagens de erro e sucesso */
+  .msg {
+    transition: all 0.3s ease;
+    margin-top: 10px;
+  }
+
+  .msg-correct {
+    color: var(--accent-color);
+    font-weight: bold;
+  }
+
+  .msg-error {
+    color: var(--danger-color);
+  }
+
+  /* Estilos para o modal da tabela de referência */
+  .reference-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .reference-content {
+    background: var(--panel-bg-color);
+    border-radius: 6px;
+    border: 1px solid rgba(0, 200, 83, 0.3);
+    box-shadow: var(--panel-shadow), 0 0 0 1px rgba(0, 200, 83, 0.1);
+    padding: 25px;
+    max-width: 90%;
+    max-height: 90%;
+    text-align: center;
+    position: relative;
+    animation: fadeEffect 0.3s;
+  }
+
+  .reference-content::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(to right, transparent, var(--accent-color), transparent);
+    opacity: 0.7;
+  }
+
+  .reference-image {
+    max-width: 100%;
+    height: auto;
+    margin-top: 15px;
+    border: 1px solid rgba(0, 200, 83, 0.3);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+  }
+
+  .reference-title {
+    font-family: 'Special Elite', cursive;
+    color: var(--accent-color);
+    text-shadow: 0 0 10px rgba(0, 200, 83, 0.4);
+    letter-spacing: 1px;
+    margin-top: 5px;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    transition: all 0.3s ease;
+    text-shadow: 0 0 10px rgba(0, 200, 83, 0.4);
+  }
+
+  .close-button:hover {
+    color: var(--accent-hover);
+    text-shadow: 0 0 15px rgba(0, 200, 83, 0.7);
+    background: none;
+    box-shadow: none;
+  }
+
+  .help-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0, 200, 83, 0.2);
+    border: 2px solid var(--accent-color);
+    color: var(--accent-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 200, 83, 0.3);
+    z-index: 10;
+    padding: 0;
+    margin: 0;
+    transition: all 0.3s ease;
+  }
+
+  .help-btn:hover {
+    background: var(--accent-color);
+    color: #000;
+    box-shadow: 0 0 15px rgba(0, 200, 83, 0.6);
+  }
+</style>
+</head>
+<body>
+<!-- Elementos decorativos -->
+<div class="decorative-element gear"></div>
+<div class="decorative-element circuit"></div>
+
+<!-- Sala 0 - Introdução -->
+<div id="sala0" class="sala">
+  <h2>Escape Room: Laboratório Criptográfico</h2>
+  <p>Você está preso em um laboratório secreto de criptografia!<br>
+  A porta está trancada e a única maneira de sair é decodificar<br>
+  a <b>Cifra de Hill</b> que controla o sistema de segurança.</p>
+  <p>Encontre as pistas, descubra a matriz secreta<br>
+  e decifre a mensagem antes que o tempo acabe!</p>
+
+  <div class="dificuldade">
+    <p>Escolha o nível de segurança:</p>
+    <button id="btnFacil" class="selecionado" onclick="selecionarDificuldade('facil')">Básico</button>
+    <button id="btnModerado" onclick="selecionarDificuldade('moderado')">Avançado</button>
+    <button id="btnDificil" onclick="selecionarDificuldade('dificil')">Crítico</button>
+  </div>
+
+  <button onclick="iniciarJogo()">INICIAR MISSÃO</button>
+</div>
+
+<!-- Sala 1 - Primeira Pista -->
+<div id="sala1" class="sala hidden">
+  <h2>Pista 1: Primeira Linha da Matriz</h2>
+  <div id="timer">TEMPO: 00:00</div>
+  <p>Em um quadro na parede, você encontra a primeira anotação:</p>
+  <div class="enigma">
+    <span id="pista1">"A soma dos elementos da primeira linha é 3, e o primeiro é o dobro do segundo."</span>
+  </div>
+  <p>Qual é a primeira linha da matriz? (Separe os números por vírgula)</p>
+  <input id="resposta1" placeholder="x,y">
+  <br>
+  <button onclick="verificarSala1()">VALIDAR</button>
+  <button onclick="mostrarDica(1)">DICA</button>
+  <p id="msg1" class="msg"></p>
+</div>
+
+<!-- Sala 2 - Segunda Pista -->
+<div id="sala2" class="sala hidden">
+  <h2>Pista 2: Segunda Linha da Matriz</h2>
+  <div id="timer">TEMPO: 00:00</div>
+  <p>Em uma gaveta entreaberta, você encontra outro papel com anotações:</p>
+  <div class="enigma">
+    <span id="pista2">"A soma dos números é 2, e ambos são iguais."</span>
+  </div>
+  <p>Qual é a segunda linha da matriz? (Separe os números por vírgula)</p>
+  <input id="resposta2" placeholder="x,y">
+  <br>
+  <button onclick="verificarSala2()">VALIDAR</button>
+  <button onclick="mostrarDica(2)">DICA</button>
+  <p id="msg2" class="msg"></p>
+</div>
+
+<!-- Sala 3 - Decodificação Final -->
+<div id="sala3" class="sala hidden">
+  <h2>Terminal de Segurança</h2>
+  <div id="timer">TEMPO: 00:00</div>
+  <p>Você encontrou a matriz completa! Use-a para decifrar o código de saída:</p>
+  <pre id="matrizMostra"></pre>
+  <p>Mensagem cifrada no terminal:</p>
+  <div class="mensagem-cifrada" id="msgCifrada">CVWNANKWIRLJXJZV</div>
+  <p>Digite a mensagem decifrada para desbloquear a saída:</p>
+  <textarea id="saida" placeholder="Mensagem decifrada..."></textarea>
+  <br>
+  <button onclick="decifrar()">DECIFRAR</button>
+  <button onclick="mostrarDica(3)">DICA</button>
+  <p id="msgFinal" class="msg"></p>
+</div>
+
+<!-- Sala 4 - Final -->
+<div id="sala4" class="sala hidden">
+  <h2>MISSÃO CONCLUÍDA!</h2>
+  <p>A porta se destranca com um som mecânico...</p>
+  <p>Você conseguiu escapar do laboratório!</p>
+  <p>Mensagem decodificada: <span class="mensagem-cifrada" id="msgOriginal">HOJENAOIRACHOVER</span></p>
+  <div id="ranking"></div>
+  <button onclick="reiniciarJogo()">NOVA MISSÃO</button>
+</div>
+
+<audio id="somAcerto" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_d0d2fbc49c.mp3?filename=correct-2-46134.mp3"></audio>
+<audio id="somErro" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_3b86991b6a.mp3?filename=wrong-buzzer-6268.mp3"></audio>
+<audio id="somAmbiente" loop src="https://cdn.pixabay.com/download/audio/2022/01/18/audio_b5e0d0115a.mp3?filename=dark-ambient-beat-3-21404.mp3"></audio>
+<audio id="somSucesso" src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_12b0c7443c.mp3?filename=success-1-6297.mp3"></audio>
+
+<script>
+/* --------- Lógica do jogo --------- */
+let matriz = [[2,1],[1,1]];
+let mensagemCifrada = "CVWNANKWIRLJXJZV";
+let mensagemOriginal = "HOJENAOIRACHOVER";
+let tempo = 0;
+let timerInterval;
+let dicasUsadas = 0;
+let dificuldade = 'facil';
+let penalidades = {
+  'facil': 15,
+  'moderado': 30,
+  'dificil': 45
+};
+
+// Formatação de tempo para mm:ss
+function formatarTempo(segundos) {
+  const minutos = Math.floor(segundos / 60);
+  const segs = segundos % 60;
+  return `${minutos.toString().padStart(2, '0')}:${segs.toString().padStart(2, '0')}`;
+}
+
+function selecionarDificuldade(nivel) {
+  dificuldade = nivel;
+  document.querySelectorAll('.dificuldade button').forEach(btn => btn.classList.remove('selecionado'));
+  document.getElementById('btn' + nivel.charAt(0).toUpperCase() + nivel.slice(1)).classList.add('selecionado');
+
+  // Configurar níveis de dificuldade
+  if (nivel === 'facil') {
+    matriz = [[2,1],[1,1]];
+    mensagemCifrada = " CVWNANKWIRLJXJZV";
+    mensagemOriginal = "HOJENAOIRACHOVER";
+    document.getElementById('pista1').textContent = "\"A soma dos elementos da primeira linha é 3, e o primeiro é o dobro do segundo.\"";
+    document.getElementById('pista2').textContent = "\"A soma dos números é 2, e ambos são iguais.\"";
+  } else if (nivel === 'moderado') {
+    matriz = [[3,1],[7,2]];
+    mensagemCifrada = "OEGRSKOGDXFDDNSV";
+    mensagemOriginal = "CIFRASECRETAHILL";
+    document.getElementById('pista1').textContent = "\"A soma dos elementos da primeira linha é 4, e o primeiro elemento é o triplo do segundo.\"";
+    document.getElementById('pista2').textContent = "\"O produto dos elementos da segunda linha é 14, e a diferença entre eles é 5.\"";
+  } else if (nivel === 'dificil') {
+    matriz = [[10,21],[19,40]];
+    mensagemCifrada = "WYHKUPGKQUOBQUUFUM";
+    mensagemOriginal = "MESTREEMMATEMATICA";
+    document.getElementById('pista1').textContent = "\"A soma dos elementos é 31 e a diferença entre o segundo e o primeiro é 11\"";
+    document.getElementById('pista2').textContent = "\"O determinante da matriz é 1, e a soma dos elementos da segunda linha é - 9.\"";
+  }
+
+  document.getElementById('msgCifrada').textContent = mensagemCifrada;
+  document.getElementById('msgOriginal').textContent = mensagemOriginal;
+}
+
+
+function iniciarJogo(){
+  tempo = 0;
+  dicasUsadas = 0;
+  startTimer();
+  proximaSala(1);
+
+  // Iniciar som ambiente
+  document.getElementById('somAmbiente').volume = 0.3;
+  document.getElementById('somAmbiente').play();
+}
+
+function reiniciarJogo(){
+  document.getElementById('somAmbiente').pause();
+  document.getElementById('somAmbiente').currentTime = 0;
+  proximaSala(0);
+}
+
+function proximaSala(n){
+  document.querySelectorAll('.sala').forEach(div => div.classList.add('hidden'));
+  const sala = document.getElementById('sala'+n);
+  sala.classList.remove('hidden');
+  sala.classList.add('fade-transition');
+
+  // Reset de efeito de transição
+  setTimeout(() => {
+    sala.classList.remove('fade-transition');
+  }, 1000);
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    tempo++;
+    document.querySelectorAll('#timer').forEach(t => t.textContent = "TEMPO: " + formatarTempo(tempo));
+  }, 1000);
+}
+
+function som(acerto=true){
+  (acerto ? somAcerto : somErro).play();
+}
+
+function mostrarDica(n){
+  dicasUsadas++;
+  let msg = "";
+  if (dificuldade === 'facil') {
+    if(n===1) msg="A primeira linha é [2,1]";
+    if(n===2) msg="A segunda linha é [1,1]";
+    if(n===3) msg="A mensagem começa com 'HOJE...'";
+  } else if (dificuldade === 'moderado') {
+    if(n===1) msg="A primeira linha é [3,1]";  // Atualizado
+    if(n===2) msg="A segunda linha é [7,2]";   // Atualizado
+    if(n===3) msg="A mensagem começa com 'CIFRA...'";
+  } else if (dificuldade === 'dificil') {
+    if(n===1) msg="A primeira linha é [10,21]";
+    if(n===2) msg="A segunda linha é [19,40]";
+    if(n===3) msg="A mensagem começa com 'CRIPTO...'";
+  }
+  alert(" Dica: " + msg + " (Penalidade: +" + penalidades[dificuldade] + "s)");
+  tempo += penalidades[dificuldade];
+}
+
+/* --------- Pistas --------- */
+function verificarSala1(){
+  const resp = document.getElementById('resposta1').value.replace(/\s/g,'');
+  let respostaCorreta = "";
+
+  if (dificuldade === 'facil') respostaCorreta = '2,1';
+  else if (dificuldade === 'moderado') respostaCorreta = '3,1';
+  else if (dificuldade === 'dificil') respostaCorreta = '10,21';
+
+  if(resp === respostaCorreta){
+    som(true);
+    document.getElementById('msg1').textContent=' Correto!';
+    document.getElementById('msg1').className = 'msg msg-correct';
+    setTimeout(()=>proximaSala(2),1500);
+  }else{
+    som(false);
+    document.getElementById('msg1').textContent=' Tente novamente.';
+    document.getElementById('msg1').className = 'msg msg-error';
+  }
+}
+
+function verificarSala2(){
+  const resp = document.getElementById('resposta2').value.replace(/\s/g,'');
+  let respostaCorreta = "";
+
+  if (dificuldade === 'facil') respostaCorreta = '1,1';
+  else if (dificuldade === 'moderado') respostaCorreta = '7,2';  // Alterado de '1,5' para '7,2'
+  else if (dificuldade === 'dificil') respostaCorreta = '19,40';
+
+  if(resp === respostaCorreta){
+    som(true);
+    document.getElementById('msg2').textContent=' Correto!';
+    document.getElementById('msg2').className = 'msg msg-correct';
+    setTimeout(()=>{
+      if (dificuldade === 'facil') document.getElementById('matrizMostra').textContent='[2 1]\n[1 1]';
+      else if (dificuldade === 'moderado') document.getElementById('matrizMostra').textContent='[3 1]\n[7 2]';  // Atualizado para mostrar a matriz correta
+      else if (dificuldade === 'dificil') document.getElementById('matrizMostra').textContent='[10 21]\n[19 40]';
+      proximaSala(3);
+    },1500);
+  }else{
+    som(false);
+    document.getElementById('msg2').textContent=' Tente novamente.';
+    document.getElementById('msg2').className = 'msg msg-error';
+  }
+}
+
+/* --------- Cifra de Hill real --------- */
+function mod(a, m){return ((a%m)+m)%m;}
+function egcd(a,b){if(b===0)return{g:a,x:1,y:0};const r=egcd(b,a%b);return{g:r.g,x:r.y,y:r.x-Math.floor(a/b)*r.y};}
+function modInv(a,m){const r=egcd(a,m);if(r.g!==1)return null;return mod(r.x,m);}
+function matMul(A,B,m){
+  const n=A.length,p=B[0].length,c=A[0].length;
+  const R=Array.from({length:n},()=>Array(p).fill(0));
+  for(let i=0;i<n;i++)for(let k=0;k<c;k++)for(let j=0;j<p;j++)
+    R[i][j]=mod(R[i][j]+A[i][k]*B[k][j],m);
+  return R;
+}
+function matInverseMod(A,m){
+  const n=A.length;
+  const M=A.map((r,i)=>r.map(x=>mod(x,m)).concat(Array.from({length:n},(_,j)=>i===j?1:0)));
+  for(let i=0;i<n;i++){
+    let pivot=-1;
+    for(let r=i;r<n;r++){if(modInv(M[r][i],m)){pivot=r;break;}}
+    if(pivot===-1)return null;
+    if(pivot!==i)[M[i],M[pivot]]=[M[pivot],M[i]];
+    const invP=modInv(M[i][i],m);
+    for(let c=0;c<2*n;c++)M[i][c]=mod(M[i][c]*invP,m);
+    for(let r=0;r<n;r++)if(r!==i){
+      const f=M[r][i];
+      for(let c=0;c<2*n;c++)M[r][c]=mod(M[r][c]-f*M[i][c],m);
+    }
+  }
+  return M.map(r=>r.slice(n,2*n).map(x=>mod(x,m)));
+}
+function textToNums(t){return [...t].map(ch=>ch.charCodeAt(0)-65);}
+function numsToText(a){return a.map(n=>String.fromCharCode(n+65)).join('');}
+
+// Hill 2x2 - encripta com A=0..Z=25
+function encryptHill2(K, plaintext) {
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const map = {};
+  for (let i=0;i<26;i++) map[A[i]] = i;
+  const inv = {};
+  for (let i=0;i<26;i++) inv[i] = A[i];
+
+  // remove não-letras e deixa maiúsculas
+  const txt = plaintext.replace(/[^A-Za-z]/g,'').toUpperCase();
+  let nums = [];
+  for (let ch of txt) nums.push(map[ch]);
+
+  // se comprimento ímpar, adiciona 'X' como padding
+  if (nums.length % 2 === 1) nums.push(map['X']);
+
+  let outNums = [];
+  for (let i=0;i<nums.length;i+=2) {
+    const P0 = nums[i], P1 = nums[i+1];
+    const C0 = (K[0][0]*P0 + K[0][1]*P1) % 26;
+    const C1 = (K[1][0]*P0 + K[1][1]*P1) % 26;
+    outNums.push((C0+26)%26, (C1+26)%26);
+  }
+  return outNums.map(n => inv[n]).join('');
+}
+
+// Hill 2x2 - decripta com A=0..Z=25
+function decryptHill2(K, ciphertext) {
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const map = {};
+  for (let i=0;i<26;i++) map[A[i]] = i;
+  const inv = {};
+  for (let i=0;i<26;i++) inv[i] = A[i];
+
+  // remove não-letras e deixa maiúsculas
+  const txt = ciphertext.replace(/[^A-Za-z]/g,'').toUpperCase();
+  let nums = [];
+  for (let ch of txt) nums.push(map[ch]);
+
+  // calcular o determinante e inversa de K (mod 26)
+  const det = (K[0][0]*K[1][1] - K[0][1]*K[1][0]) % 26;
+  // determinante precisa ter inverso modular para decriptar
+  const detInv = modInv(((det % 26) + 26) % 26, 26);
+  if (detInv === null) {
+    throw new Error("Matriz não invertível!");
+  }
+
+  // calcular a matriz adjunta (transposta da matriz de cofatores)
+  const adj = [[K[1][1], -K[0][1]], [-K[1][0], K[0][0]]];
+
+  // matriz inversa = (adjunta * detInv) mod 26
+  const Kinv = [
+    [((adj[0][0] * detInv) % 26 + 26) % 26, ((adj[0][1] * detInv) % 26 + 26) % 26],
+    [((adj[1][0] * detInv) % 26 + 26) % 26, ((adj[1][1] * detInv) % 26 + 26) % 26]
+  ];
+
+  let outNums = [];
+  for (let i=0;i<nums.length;i+=2) {
+    const C0 = nums[i], C1 = nums[i+1];
+    const P0 = (Kinv[0][0]*C0 + Kinv[0][1]*C1) % 26;
+    const P1 = (Kinv[1][0]*C0 + Kinv[1][1]*C1) % 26;
+    outNums.push((P0+26)%26, (P1+26)%26);
+  }
+  return outNums.map(n => inv[n]).join('');
+}
+
+function decifrar(){
+  // Usar a nova função decryptHill2 para decifrar
+  try {
+    const textoDecifrado = decryptHill2(matriz, mensagemCifrada);
+
+    // Pegar o texto que o usuário digitou
+    const userInput = document.getElementById('saida').value.toUpperCase().replace(/\s/g, '');
+
+    // Verificar se o que o usuário digitou corresponde à mensagem original esperada
+    if(userInput === mensagemOriginal) {
+      document.getElementById('somAmbiente').pause();
+      document.getElementById('somSucesso').play();
+      document.getElementById('msgFinal').textContent = ' Decodificação bem-sucedida! Sistema destravado.';
+      document.getElementById('msgFinal').className = 'msg msg-correct';
+      setTimeout(()=>encerrarJogo(),2000);
+    } else {
+      som(false);
+      document.getElementById('msgFinal').textContent = ' Decodificação incorreta. Tente novamente.';
+      document.getElementById('msgFinal').className = 'msg msg-error';
+    }
+  } catch (error) {
+    alert("Erro na decodificação: " + error.message);
+  }
+}
+
+
+/* --------- Ranking --------- */
+function encerrarJogo(){
+  clearInterval(timerInterval);
+  proximaSala(4);
+  const score = tempo + (dicasUsadas * penalidades[dificuldade]);
+  const recordesChave = 'hill_ranking_' + dificuldade;
+  const recordes = JSON.parse(localStorage.getItem(recordesChave)||'[]');
+  recordes.push({tempo:score, data:new Date().toLocaleString(), dif:dificuldade});
+  recordes.sort((a,b)=>a.tempo-b.tempo);
+  localStorage.setItem(recordesChave,JSON.stringify(recordes.slice(0,5)));
+  mostrarRanking(recordes.slice(0,5));
+}
+
+function mostrarRanking(lista){
+  const div = document.getElementById('ranking');
+  const nomeDificuldade = {
+    'facil': 'Básico',
+    'moderado': 'Avançado',
+    'dificil': 'Crítico'
+  }[dificuldade];
+
+  div.innerHTML = `<h3>MELHORES TEMPOS (${nomeDificuldade})</h3>` +
+                  lista.map((r,i)=>`${i+1}. ${formatarTempo(r.tempo)} (${r.data})`).join("<br>");
+}
+</script>
+
+<!-- Botão de ajuda flutuante -->
+<button id="helpBtn" class="help-btn" title="Tabela de referência">?</button>
+
+<!-- Modal da tabela de referência -->
+<div id="referenceModal" class="reference-modal">
+  <div class="reference-content">
+    <button id="closeModal" class="close-button">&times;</button>
+    <h3 class="reference-title">Correspondência entre as letras do alfabeto e os elementos de Z₂₆</h3>
+    <img src="quadro_2.png" alt="Tabela de correspondência alfabeto-números" class="reference-image">
+  </div>
+</div>
+
+<script>
+  // Controle do modal da tabela de referência
+  const helpBtn = document.getElementById('helpBtn');
+  const referenceModal = document.getElementById('referenceModal');
+  const closeModal = document.getElementById('closeModal');
+
+  helpBtn.addEventListener('click', function() {
+    referenceModal.style.display = 'flex';
+  });
+
+  closeModal.addEventListener('click', function() {
+    referenceModal.style.display = 'none';
+  });
+
+  // Fechar ao clicar fora da tabela
+  window.addEventListener('click', function(event) {
+    if (event.target === referenceModal) {
+      referenceModal.style.display = 'none';
+    }
+  });
+
+  // Fechar com a tecla ESC
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' && referenceModal.style.display === 'flex') {
+      referenceModal.style.display = 'none';
+    }
+  });
+</script>
+</body>
+</html>
